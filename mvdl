@@ -1,0 +1,98 @@
+#!/bin/bash
+function helptext() {
+cat <<EOF
+#   ------------------------------------------------------------------
+#
+#   Move most recent file in pre-defined folder to the current folder
+#
+#       I made this program so I could move my just-downloaded file
+#       into my current working directory.
+#
+#   Usage:
+#
+#       $PROGNAME [--help] ARGUMENTS
+#
+#   Arguments:
+#
+#       Any argument other than --help will display the name of the
+#       file that will be moved if executed without arguments.
+#
+#   Author:             Joe Miragliuolo
+#
+#   Revision History:
+#       2009-06-23      File created
+#
+#   ------------------------------------------------------------------
+EOF
+}   # end of helptext
+
+# TO DO:
+#   - handle if file already exists at target? (maybe a "mv --interactive" call
+#       or something?)
+#   - maybe make it so you have to type a destination, so that executing it
+#       without args cause a usage message? (SAFER!) (don't forget that if you
+#       do this, you'll need to change the arg handling to deal with just a
+#       "-w" arg or something for the "what file?" option.)
+
+#   Constants
+    declare -r PROGNAME=$(basename $0)
+
+#   ------------------------------------------------------------------
+#   Program starts here
+#   ------------------------------------------------------------------
+
+##### Command Line Processing & Main Logic #####
+
+# if file exists
+#   set some variable equal to filename
+# else
+#   echo "No recent file."
+#   exit 1
+# end if
+
+#~/Downloads/`ls -pt ~/Downloads/ | grep -v /$ | head -n1`
+
+DLFILEPATH=$HOME/Downloads
+
+if [ -f "$DLFILEPATH/$(ls -pt $DLFILEPATH/ | grep -v /$ | head -n1)" ]; then
+  # if there is a recent file in the specified dir, then
+  # set the variable to the name of that file.
+  RECENTDLFILE="$(ls -pt $DLFILEPATH/ | grep -v /$ | head -n1)"
+else 
+	# Otherwise, set the variable to an empty string
+  RECENTDLFILE=""
+fi
+
+if [ $# -eq 0 ] && [ -n $RECENTDLFILE ]; then
+  # if no params, then
+  # mv the file
+  echo "Moving $RECENTDLFILE to this directory."
+  #echo "mv \"$DLFILEPATH/$RECENTDLFILE\" ."  # for testing
+  mv "$DLFILEPATH/$RECENTDLFILE" .
+  exit
+else
+  if [ "$1" = "--help" ]; then
+    # otherwise, if the param is --help, then
+    # show the helptext and exit nicely
+    helptext
+    exit
+  else
+    if [[ -z $RECENTDLFILE ]]; then
+      # otherwise, if there isn't a file,
+      # let the user know and then exit with error
+      echo "No recent file."
+      exit 1
+    else
+      # otherwise, there must be a file and the param isn't --help, so
+      # show filename of recent file and exit nicely
+      echo "\"$RECENTDLFILE\" is the most recent file in $DLFILEPATH/"
+      exit
+    fi
+  fi
+fi
+
+exit
+
+# end of script
+
+

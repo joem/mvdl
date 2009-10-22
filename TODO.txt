@@ -1,0 +1,6 @@
+TO DO:
+
+  - handle if file already exists at target? (maybe a "mv --interactive" call or something?)
+
+  - maybe make it so you have to type a destination, so that executing it without args cause a usage message? (SAFER!) (don't forget that if you do this, you'll need to change the arg handling to deal with just a "-w" arg or something for the "what file?" option.)
+
