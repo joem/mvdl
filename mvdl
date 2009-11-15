@@ -52,12 +52,11 @@ EOF
 RECENTDLFILE="$(ls -pt $DLFILEPATH/ | grep -v /$ | head -n1)"
 
 if [ $# -eq 0 ]; then
+  # if no params, then start the moving process...
   if [ -z "$RECENTDLFILE" ]; then
     echo "ERROR: There does not appear to be any file to move in $DLFILEPATH/"
     exit 1
   fi
-  # if no params, then
-  #echo "\"Clip it! 1.0.zip\" is the most recent file in /Users/joemiragliuolo/Downloads/"
   echo "\"$RECENTDLFILE\" is the most recent file in $DLFILEPATH/"
   echo -n "Move to this directory? [y/N] "
   read -s -n 1 a
