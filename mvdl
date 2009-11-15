@@ -10,17 +10,18 @@ cat <<EOF
 #
 #   Usage:
 #
-#       $PROGNAME [--help] ARGUMENTS
+#       ${PROGNAME} [ARGUMENT]
 #
 #   Arguments:
 #
-#       Any argument other than --help will display the name of the
-#       file that will be moved if executed without arguments.
+#       help, -?, --help        - Display this help text.
+#       undo, -u, --undo        - Undo last action performed by ${PROGNAME}
+#       history, -h, --history  - Display the ${PROGNAME} history
+#
+#   External programs req'd:
+#       bash
 #
 #   Author:             Joe Miragliuolo
-#
-#   Revision History:
-#       2009-06-23      File created
 #
 #   ------------------------------------------------------------------
 EOF
@@ -37,62 +38,126 @@ EOF
 #   Constants
     declare -r PROGNAME=$(basename $0)
 
+#   Variables
+    MVDL_HIST_FLAG=1        # 0 = don't keep history, 1 = keep history
+    MVDL_HIST_DIR=$HOME     # Where to keep the history file
+    MVDL_HIST_LINES=10      # Default number of history items saved
+    MVDL_HIST_FILE=.mvdl_history # Default filename of history file
+    DLFILEPATH=$HOME/Downloads
+
 #   ------------------------------------------------------------------
 #   Program starts here
 #   ------------------------------------------------------------------
 
-##### Command Line Processing & Main Logic #####
+RECENTDLFILE="$(ls -pt $DLFILEPATH/ | grep -v /$ | head -n1)"
 
-# if file exists
-#   set some variable equal to filename
-# else
-#   echo "No recent file."
-#   exit 1
-# end if
-
-#~/Downloads/`ls -pt ~/Downloads/ | grep -v /$ | head -n1`
-
-DLFILEPATH=$HOME/Downloads
-
-if [ -f "$DLFILEPATH/$(ls -pt $DLFILEPATH/ | grep -v /$ | head -n1)" ]; then
-  # if there is a recent file in the specified dir, then
-  # set the variable to the name of that file.
-  RECENTDLFILE="$(ls -pt $DLFILEPATH/ | grep -v /$ | head -n1)"
-else 
-	# Otherwise, set the variable to an empty string
-  RECENTDLFILE=""
-fi
-
-if [ $# -eq 0 ] && [ -n $RECENTDLFILE ]; then
+if [ $# -eq 0 ]; then
+  if [ -z "$RECENTDLFILE" ]; then
+    echo "ERROR: There does not appear to be any file to move in $DLFILEPATH/"
+    exit 1
+  fi
   # if no params, then
-  # mv the file
-  echo "Moving $RECENTDLFILE to this directory."
-  #echo "mv \"$DLFILEPATH/$RECENTDLFILE\" ."  # for testing
-  mv "$DLFILEPATH/$RECENTDLFILE" .
-  exit
-else
-  if [ "$1" = "--help" ]; then
-    # otherwise, if the param is --help, then
-    # show the helptext and exit nicely
-    helptext
-    exit
+  #echo "\"Clip it! 1.0.zip\" is the most recent file in /Users/joemiragliuolo/Downloads/"
+  echo "\"$RECENTDLFILE\" is the most recent file in $DLFILEPATH/"
+  echo -n "Move to this directory? [y/N] "
+  read -s -n 1 a
+  if [[ $a != [Yy] ]]; then
+    echo "n"
+    echo "Not going to move file."
+    exit 1
   else
-    if [[ -z $RECENTDLFILE ]]; then
-      # otherwise, if there isn't a file,
-      # let the user know and then exit with error
-      echo "No recent file."
+    echo "y"
+    if [ -f "./$RECENTDLFILE" ]; then
+      echo "ERROR: No move occurred. A file by that name already exists in current dir."
       exit 1
     else
-      # otherwise, there must be a file and the param isn't --help, so
-      # show filename of recent file and exit nicely
-      echo "\"$RECENTDLFILE\" is the most recent file in $DLFILEPATH/"
+      echo "Moving $RECENTDLFILE to this directory."
+      #echo "mv \"$DLFILEPATH/$RECENTDLFILE\" ."  # DEBUG
+      mv "$DLFILEPATH/$RECENTDLFILE" .
+      if [ $MVDL_HIST_FLAG -eq 1 ]; then
+        if [ -f "$MVDL_HIST_DIR/$MVDL_HIST_FILE" ]; then
+          # Save last section of message log file.
+          tail -n $MVDL_HIST_LINES "$MVDL_HIST_DIR/$MVDL_HIST_FILE" > "$MVDL_HIST_DIR/$MVDL_HIST_FILE.temp"
+          # Becomes new log directory.
+          mv $MVDL_HIST_DIR/$MVDL_HIST_FILE.temp $MVDL_HIST_DIR/$MVDL_HIST_FILE
+        fi
+        echo -e "$(date +%s)\t$DLFILEPATH/$RECENTDLFILE\t=>\t$PWD/$RECENTDLFILE" >> "$MVDL_HIST_DIR/$MVDL_HIST_FILE"
+      fi
       exit
     fi
   fi
+else
+  case $1 in
+    -\?|--help|help)
+      # otherwise, if the param is --help, then
+      # show the helptext and exit nicely
+      helptext
+      exit
+      ;;
+    -u|--undo|undo)
+      # otherwise, if the param is -u, then
+      # undo last mv and exit nicely
+      #undo
+      echo "Undo last move:"
+      FROMFILE=$(tail -1 "$MVDL_HIST_DIR/$MVDL_HIST_FILE" | awk '{print $2}') # where it came from
+      TOFILE=$(tail -1 "$MVDL_HIST_DIR/$MVDL_HIST_FILE" | awk '{print $4}')   # where it was moved to
+      echo "\"$(basename $FROMFILE)\" was moved to \"$(dirname $TOFILE)/\""
+      echo -n "Would you like to move it back to \"$(dirname $FROMFILE)\"? [Y/n] "
+      read -s -n 1 a
+      case $a in
+        n|N)
+          # n and N do no
+          echo "n"
+          echo "Not going to move file."
+          exit 1
+          ;;
+        y|Y|"")
+          # y Y and <enter> to do yes
+          echo "y"
+          if [ -f "$TOFILE" ]; then # file exists
+            if [ -f "$FROMFILE" ]; then # file already exists in the dir we're going to
+              echo "ERROR: a file by that name already exists in the dir we're moving it to."
+              exit 1
+            else
+              #move it
+              #echo "mv \"$TOFILE\" \"$(dirname $FROMFILE)\""  # DEBUG
+              echo "Moving file back."
+              mv "$TOFILE" "$(dirname $FROMFILE)"
+              exit
+            fi
+          else
+            echo "ERROR: file no longer exists where mvdl put it."
+            exit 1
+          fi
+          exit
+          ;;
+        *)
+          # everything else doesn't do anything (effectively a no)
+          echo ""
+          echo "Not a valid answer. Not going to move file."
+          exit 1
+          ;;
+      esac
+      #echo "mv \"$TOFILE\" \"$(dirname $FROMFILE)\""
+      ;;
+    -h|--history|history)
+      # otherwise, if the param is -h, then
+      # show the history and exit nicely
+      echo "Show the history:"
+      if [ -f "$MVDL_HIST_DIR/$MVDL_HIST_FILE" ]; then
+        cat "$MVDL_HIST_DIR/$MVDL_HIST_FILE"
+      fi
+      exit
+      ;;
+    *)
+      # invalid argument
+      echo "ERROR: Invalid argument. Run \"mvdl --help\" to see possible arguments."
+      exit 1
+      ;;
+  esac
 fi
 
 exit
 
 # end of script
-
 
