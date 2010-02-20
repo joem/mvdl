@@ -1,4 +1,3 @@
 TO DO:
 
-  - maybe use 'ls -ptu' instead of just 'ls -pt' (or at least make it an option?!)
 
