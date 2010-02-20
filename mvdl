@@ -49,7 +49,7 @@ EOF
 #   Program starts here
 #   ------------------------------------------------------------------
 
-RECENTDLFILE="$(ls -pt $DLFILEPATH/ | grep -v /$ | head -n1)"
+RECENTDLFILE="$(ls -pct $DLFILEPATH/ | grep -v /$ | head -n1)"
 
 if [ $# -eq 0 ]; then
   # if no params, then start the moving process...
