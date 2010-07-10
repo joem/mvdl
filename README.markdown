@@ -15,6 +15,8 @@ Usage
 
     mvdl [ARGUMENT]
 
+  `mvdl`'s default behavior is to tell you what it thinks the most recent file is and ask if you want to move it, defaulting to 'no'. Any non-'y' key answers 'no'.
+
 Arguments
 ---------
 
@@ -27,4 +29,9 @@ Required external programs
 
  - bash (probably won't work with other shells)
 
+
+To Do
+-----
+
+ - ?
 
